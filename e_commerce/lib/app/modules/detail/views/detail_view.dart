@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:e_commerce/app/core/theme/app_colors.dart';
+import 'package:e_commerce/app/modules/cart/views/components/cart_badge_button.dart';
 import '../controllers/detail_controller.dart';
 
 class DetailView extends GetView<DetailController> {
@@ -10,7 +11,8 @@ class DetailView extends GetView<DetailController> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final product = controller.product;
+    // product selalu diisi di onInit, sebelum view dibangun
+    final product = controller.product.value!;
 
     return Scaffold(
       appBar: AppBar(
@@ -29,6 +31,7 @@ class DetailView extends GetView<DetailController> {
               onPressed: controller.toggleFavorite,
             ),
           ),
+          const CartBadgeButton(),
           const SizedBox(width: 8),
         ],
       ),
@@ -51,7 +54,7 @@ class DetailView extends GetView<DetailController> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: Image.network(
-                  product['imageUrl'] as String? ?? '',
+                  product.imageUrl,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Center(
                     child: Icon(
@@ -76,7 +79,7 @@ class DetailView extends GetView<DetailController> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    product['category'] as String? ?? 'Sneakers',
+                    product.category,
                     style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 12,
@@ -89,7 +92,7 @@ class DetailView extends GetView<DetailController> {
                     const Icon(Icons.star_rounded, size: 20, color: AppColors.accent),
                     const SizedBox(width: 4),
                     Text(
-                      '${product['rating'] ?? 4.8} / 5.0 (120+ ulasan)',
+                      '${product.rating} / 5.0 (120+ ulasan)',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -104,7 +107,7 @@ class DetailView extends GetView<DetailController> {
 
             // Nama Produk & Harga Satuan
             Text(
-              product['name'] as String? ?? 'Sneakers Premium',
+              product.name,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -114,7 +117,7 @@ class DetailView extends GetView<DetailController> {
             ),
             const SizedBox(height: 8),
             Text(
-              controller.formattedPrice,
+              product.formattedPrice,
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -193,7 +196,7 @@ class DetailView extends GetView<DetailController> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Sepatu sneakers edisi terbatas dengan material kulit sintetis premium berkualitas tinggi. Dirancang khusus untuk memberikan kenyamanan maksimal sepanjang hari dengan sol antiselip dan sirkulasi udara yang optimal.',
+              product.description,
               style: TextStyle(
                 fontSize: 13,
                 height: 1.6,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:e_commerce/app/core/theme/app_colors.dart';
+import 'package:e_commerce/app/modules/cart/views/components/cart_badge_button.dart';
 import 'package:e_commerce/app/routes/app_pages.dart';
 import '../controllers/home_controller.dart';
 import 'components/product_card.dart';
@@ -81,44 +82,7 @@ class HomeView extends GetView<HomeController> {
           ),
 
           // Navigasi ke Keranjang Belanja dengan Badge
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                tooltip: 'Keranjang Belanja',
-                icon: const Icon(Icons.shopping_bag_outlined),
-                onPressed: () => Get.toNamed(Routes.CART),
-              ),
-              Obx(() {
-                final count = controller.cartCount.value;
-                if (count == 0) return const SizedBox.shrink();
-                return Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.error,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      '$count',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                );
-              }),
-            ],
-          ),
+          const CartBadgeButton(),
           const SizedBox(width: 8),
         ],
       ),
@@ -236,18 +200,17 @@ class HomeView extends GetView<HomeController> {
                 ),
                 itemBuilder: (context, index) {
                   final product = items[index];
-                  final id = product['id'] as String;
                   return Obx(
                     () => ProductCard(
-                      title: product['name'] as String,
-                      category: product['category'] as String,
-                      price: controller.currencyFormatter.format(product['price']),
-                      rating: (product['rating'] as num).toDouble(),
-                      imageUrl: product['imageUrl'] as String,
-                      isFavorite: controller.isFavorite(id),
+                      title: product.name,
+                      category: product.category,
+                      price: product.formattedPrice,
+                      rating: product.rating,
+                      imageUrl: product.imageUrl,
+                      isFavorite: controller.isFavorite(product.id),
                       onTap: () => controller.openDetail(product),
                       onAddToCart: () => controller.addToCart(product),
-                      onToggleFavorite: () => controller.toggleFavorite(id),
+                      onToggleFavorite: () => controller.toggleFavorite(product.id),
                     ),
                   );
                 },

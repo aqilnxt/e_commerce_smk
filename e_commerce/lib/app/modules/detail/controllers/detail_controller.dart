@@ -2,12 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:e_commerce/app/core/theme/app_colors.dart';
+import 'package:e_commerce/app/data/models/product_model.dart';
+import 'package:e_commerce/app/modules/cart/controllers/cart_controller.dart';
 import 'package:e_commerce/app/modules/home/controllers/home_controller.dart';
 
 class DetailController extends GetxController {
   final HomeController homeController = Get.find<HomeController>();
 
-  late final Map<String, dynamic> product;
+  CartController get cartController {
+    if (Get.isRegistered<CartController>()) {
+      return Get.find<CartController>();
+    }
+    return Get.put(CartController());
+  }
+
+  final product = Rx<ProductModel?>(null);
 
   final sizes = const ['39', '40', '41', '42', '43', '44'];
   final selectedSize = '42'.obs;
@@ -16,12 +25,11 @@ class DetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    product = Get.arguments as Map<String, dynamic>? ?? homeController.products.first;
+    product.value = Get.arguments as ProductModel? ?? homeController.products.first;
   }
 
-  String get formattedPrice => homeController.currencyFormatter.format(product['price']);
-
-  bool get isFavorite => homeController.isFavorite(product['id'] as String);
+  bool get isFavorite =>
+      product.value != null && homeController.isFavorite(product.value!.id);
 
   void incrementQuantity() => quantity.value++;
 
@@ -30,12 +38,12 @@ class DetailController extends GetxController {
   }
 
   void toggleFavorite() {
-    homeController.toggleFavorite(product['id'] as String);
+    final product = this.product.value;
+    if (product == null) return;
+    homeController.toggleFavorite(product.id);
     Get.snackbar(
       isFavorite ? 'Wishlist Ditambahkan' : 'Wishlist Dihapus',
-      isFavorite
-          ? '${product['name']} disimpan ke favorit!'
-          : '${product['name']} dihapus dari favorit.',
+      isFavorite ? '${product.name} disimpan ke favorit!' : '${product.name} dihapus dari favorit.',
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: isFavorite ? AppColors.accent : AppColors.darkSurfaceCard,
       colorText: Colors.white,
@@ -45,5 +53,23 @@ class DetailController extends GetxController {
     );
   }
 
-  void addToCart() => homeController.addToCart(product, quantity: quantity.value);
+  void addToCart() {
+    final product = this.product.value;
+    if (product == null) return;
+    cartController.addItem(
+      product,
+      quantity: quantity.value,
+      size: selectedSize.value,
+    );
+    Get.snackbar(
+      'Berhasil Ditambahkan',
+      '${quantity.value} item ${product.name} (Size ${selectedSize.value}) masuk ke keranjang!',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppColors.success,
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+      borderRadius: 12,
+      duration: const Duration(seconds: 2),
+    );
+  }
 }

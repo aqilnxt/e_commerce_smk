@@ -50,10 +50,39 @@ void main() {
     expect(find.text('2'), findsOneWidget);
     await tester.tap(find.text('Tambah ke Keranjang'));
     await settle(tester);
+    expect(find.text('3'), findsOneWidget);
 
     Get.back();
     await tester.pumpAndSettle();
     expect(find.text('3'), findsOneWidget);
+
+    await tester.tap(find.widgetWithIcon(IconButton, Icons.shopping_bag_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('Keranjang Belanja (3)'), findsOneWidget);
+    expect(find.text('Rp 7.497.000'), findsNWidgets(2));
+    expect(find.text('Rp 824.670'), findsOneWidget);
+    expect(find.text('Gratis'), findsOneWidget);
+    expect(find.text('Rp 8.321.670'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pump();
+    expect(find.text('Keranjang Belanja (4)'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hapus').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Keranjang masih kosong'), findsOneWidget);
+
+    Get.back();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.favorite_border_rounded).last);
+    await tester.pumpAndSettle();
+    expect(find.text('Wishlist Favorit'), findsOneWidget);
+    await tester.tap(find.text('Ke Keranjang'));
+    await settle(tester);
+    expect(find.text('Belum ada produk favorit'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
 
     FlutterError.onError = reportError;
   });
