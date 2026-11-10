@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:e_commerce/app/core/theme/app_colors.dart';
-import 'package:e_commerce/app/routes/app_pages.dart';
 import '../controllers/detail_controller.dart';
 
 class DetailView extends GetView<DetailController> {
@@ -11,19 +10,7 @@ class DetailView extends GetView<DetailController> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Data produk fallback jika dibuka langsung
-    final Map<String, dynamic> product = (Get.arguments as Map<String, dynamic>?) ?? {
-      'title': 'Nike Air Jordan 1 Retro High',
-      'category': 'Basketball',
-      'price': 'Rp 2.499.000',
-      'rating': 4.9,
-      'image': 'https://images.unsplash.com/photo-1552346154-21d32810aba3?w=500&q=80',
-    };
-
-    final sizes = [39, 40, 41, 42, 43, 44];
-    final selectedSize = 42.obs;
-    final quantity = 1.obs;
-    final isFavorite = false.obs;
+    final product = controller.product;
 
     return Scaffold(
       appBar: AppBar(
@@ -36,24 +23,10 @@ class DetailView extends GetView<DetailController> {
           Obx(
             () => IconButton(
               icon: Icon(
-                isFavorite.value ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                color: isFavorite.value ? AppColors.error : null,
+                controller.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                color: controller.isFavorite ? AppColors.error : null,
               ),
-              onPressed: () {
-                isFavorite.toggle();
-                Get.snackbar(
-                  isFavorite.value ? 'Wishlist Ditambahkan' : 'Wishlist Dihapus',
-                  isFavorite.value
-                      ? '${product['title']} disimpan ke favorit!'
-                      : '${product['title']} dihapus dari favorit.',
-                  snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: isFavorite.value ? AppColors.accent : AppColors.darkSurfaceCard,
-                  colorText: Colors.white,
-                  margin: const EdgeInsets.all(16),
-                  borderRadius: 12,
-                  duration: const Duration(seconds: 2),
-                );
-              },
+              onPressed: controller.toggleFavorite,
             ),
           ),
           const SizedBox(width: 8),
@@ -78,7 +51,7 @@ class DetailView extends GetView<DetailController> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: Image.network(
-                  product['image'] as String? ?? '',
+                  product['imageUrl'] as String? ?? '',
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Center(
                     child: Icon(
@@ -131,7 +104,7 @@ class DetailView extends GetView<DetailController> {
 
             // Nama Produk & Harga Satuan
             Text(
-              product['title'] as String? ?? 'Sneakers Premium',
+              product['name'] as String? ?? 'Sneakers Premium',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -141,7 +114,7 @@ class DetailView extends GetView<DetailController> {
             ),
             const SizedBox(height: 8),
             Text(
-              product['price'] as String? ?? 'Rp 0',
+              controller.formattedPrice,
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -164,15 +137,15 @@ class DetailView extends GetView<DetailController> {
               height: 44,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: sizes.length,
+                itemCount: controller.sizes.length,
                 separatorBuilder: (context, index) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
-                  final size = sizes[index];
+                  final size = controller.sizes[index];
                   return Obx(() {
-                    final isSelected = selectedSize.value == size;
+                    final isSelected = controller.selectedSize.value == size;
                     return InkWell(
                       borderRadius: BorderRadius.circular(12),
-                      onTap: () => selectedSize.value = size,
+                      onTap: () => controller.selectedSize.value = size,
                       child: Container(
                         width: 50,
                         decoration: BoxDecoration(
@@ -189,7 +162,7 @@ class DetailView extends GetView<DetailController> {
                         ),
                         child: Center(
                           child: Text(
-                            '$size',
+                            size,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -254,9 +227,7 @@ class DetailView extends GetView<DetailController> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.remove_rounded, size: 18),
-                        onPressed: () {
-                          if (quantity.value > 1) quantity.value--;
-                        },
+                        onPressed: controller.decrementQuantity,
                         constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         padding: EdgeInsets.zero,
                       ),
@@ -264,7 +235,7 @@ class DetailView extends GetView<DetailController> {
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         child: Obx(
                           () => Text(
-                            '${quantity.value}',
+                            '${controller.quantity.value}',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -275,7 +246,7 @@ class DetailView extends GetView<DetailController> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.add_rounded, size: 18),
-                        onPressed: () => quantity.value++,
+                        onPressed: controller.incrementQuantity,
                         constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         padding: EdgeInsets.zero,
                       ),
@@ -307,18 +278,7 @@ class DetailView extends GetView<DetailController> {
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.shopping_bag_rounded),
                   label: const Text('Tambah ke Keranjang'),
-                  onPressed: () {
-                    Get.snackbar(
-                      'Berhasil Ditambahkan',
-                      '${quantity.value} item ${product['title']} (Size ${selectedSize.value}) berhasil masuk ke keranjang!',
-                      snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: AppColors.success,
-                      colorText: Colors.white,
-                      margin: const EdgeInsets.all(16),
-                      borderRadius: 12,
-                    );
-                    Get.toNamed(Routes.CART);
-                  },
+                  onPressed: controller.addToCart,
                 ),
               ),
             ],
