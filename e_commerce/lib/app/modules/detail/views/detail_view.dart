@@ -92,7 +92,7 @@ class DetailView extends GetView<DetailController> {
                     const Icon(Icons.star_rounded, size: 20, color: AppColors.accent),
                     const SizedBox(width: 4),
                     Text(
-                      '${product.rating} / 5.0 (120+ ulasan)',
+                      '${product.rating} / 5.0 (${product.reviewCount} ulasan)',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,

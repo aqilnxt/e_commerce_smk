@@ -2,7 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
+import 'package:e_commerce/app/core/network/result.dart';
+import 'package:e_commerce/app/data/models/product_model.dart';
+import 'package:e_commerce/app/data/repository/product_repository.dart';
 import 'package:e_commerce/app/routes/app_pages.dart';
+
+/// Repository palsu supaya test tidak bergantung pada internet
+class FakeProductRepository implements ProductRepository {
+  FakeProductRepository(this.result);
+
+  final Result<List<ProductModel>, String> result;
+
+  @override
+  Future<Result<List<ProductModel>, String>> fetchProducts() async => result;
+}
+
+void useRepository(Result<List<ProductModel>, String> result) {
+  Get.put<ProductRepository>(FakeProductRepository(result), permanent: true);
+}
 
 Future<void> settle(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 5));
@@ -13,6 +30,8 @@ void main() {
   setUp(Get.reset);
 
   testWidgets('filter, favorit, badge, dan stepper reaktif', (tester) async {
+    // Server gagal -> katalog lokal cadangan (6 produk) yang tampil
+    useRepository(const Failure('offline'));
     tester.view.physicalSize = const Size(2700, 6000); // font tes (Ahem) jauh lebih lebar dari font asli
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -88,6 +107,7 @@ void main() {
   });
 
   testWidgets('form login menampilkan error validasi secara realtime', (tester) async {
+    useRepository(const Failure('offline'));
     tester.view.physicalSize = const Size(2700, 6000);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -126,5 +146,36 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
     expect(find.text('Katalog Sneakers'), findsOneWidget);
+  });
+
+  testWidgets('data server tampil dan snackbar sukses muncul', (tester) async {
+    tester.view.physicalSize = const Size(2700, 6000);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    useRepository(Success([
+      ProductModel.fromJson({'id': 1, 'title': 'Sepatu A', 'category': 'mens-shoes', 'price': 100}),
+      ProductModel.fromJson({'id': 2, 'title': 'Sepatu B', 'category': 'mens-shoes', 'price': 50}),
+    ]));
+
+    final reportError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      if (details.exception is! NetworkImageLoadException) reportError!(details);
+    };
+
+    await tester.pumpWidget(
+      GetMaterialApp(initialRoute: AppPages.INITIAL, getPages: AppPages.routes),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Katalog Berhasil Diperbarui'), findsOneWidget);
+    expect(find.text('Berhasil mengunduh 2 sepatu terbaru dari server!'), findsOneWidget);
+    expect(find.text('2 Produk'), findsOneWidget);
+    expect(find.widgetWithText(ChoiceChip, 'Mens-shoes'), findsOneWidget);
+    expect(find.text('Rp 1.500.000'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    FlutterError.onError = reportError;
   });
 }
