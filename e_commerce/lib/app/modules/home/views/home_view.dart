@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:e_commerce/app/core/theme/app_colors.dart';
+import 'package:e_commerce/app/data/local/storage_service.dart';
 import 'package:e_commerce/app/modules/cart/views/components/cart_badge_button.dart';
 import 'package:e_commerce/app/routes/app_pages.dart';
 import '../controllers/home_controller.dart';
 import 'components/product_card.dart';
 import 'components/promo_banner.dart';
+import '../widgets/product_card_shimmer.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
@@ -69,10 +71,10 @@ class HomeView extends GetView<HomeController> {
               color: isDark ? AppColors.accent : AppColors.lightTextPrimary,
             ),
             onPressed: () {
-              if (Get.isDarkMode) {
-                Get.changeThemeMode(ThemeMode.light);
+              if (Get.isRegistered<StorageService>()) {
+                Get.find<StorageService>().toggleTheme();
               } else {
-                Get.changeThemeMode(ThemeMode.dark);
+                Get.changeThemeMode(Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
               }
             },
           ),
@@ -183,18 +185,7 @@ class HomeView extends GetView<HomeController> {
               // GridView Produk Katalog
               Obx(() {
                 if (controller.isLoading.value && controller.products.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(40),
-                      child: Column(
-                        children: [
-                          CircularProgressIndicator(color: AppColors.primary),
-                          SizedBox(height: 16),
-                          Text('Memuat katalog sneakers dari server...'),
-                        ],
-                      ),
-                    ),
-                  );
+                  return const ProductGridShimmer(itemCount: 4);
                 }
 
                 if (controller.errorMessage.value.isNotEmpty && controller.products.isEmpty) {
