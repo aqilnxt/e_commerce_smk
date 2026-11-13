@@ -86,4 +86,45 @@ void main() {
 
     FlutterError.onError = reportError;
   });
+
+  testWidgets('form login menampilkan error validasi secara realtime', (tester) async {
+    tester.view.physicalSize = const Size(2700, 6000);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      GetMaterialApp(initialRoute: Routes.LOGIN, getPages: AppPages.routes),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Masuk ke Akun'));
+    await tester.pump();
+    expect(find.text('Alamat email wajib diisi'), findsOneWidget);
+    expect(find.text('Kata sandi wajib diisi'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField).first, 'siswa@sekolah.sch.id');
+    await tester.enterText(find.byType(TextFormField).last, 'sepatubaru');
+    await tester.pump();
+    expect(find.text('Alamat email wajib diisi'), findsNothing);
+    expect(find.text('Kata sandi harus mengandung minimal 1 angka (0-9)'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField).last, 'sepatubaru1');
+    await tester.pump();
+    expect(find.text('Kata sandi harus mengandung minimal 1 angka (0-9)'), findsNothing);
+
+    final field = () => tester.widget<EditableText>(find.byType(EditableText).last);
+    expect(field().obscureText, isTrue);
+    await tester.tap(find.byIcon(Icons.visibility_off_outlined));
+    await tester.pump();
+    expect(field().obscureText, isFalse);
+
+    await tester.tap(find.text('Masuk ke Akun'));
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    expect(find.text('Katalog Sneakers'), findsOneWidget);
+  });
 }

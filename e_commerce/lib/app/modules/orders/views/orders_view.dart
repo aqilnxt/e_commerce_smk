@@ -60,6 +60,11 @@ class OrdersView extends GetView<OrdersController> {
         title: const Text('Riwayat Pesanan'),
         actions: [
           IconButton(
+            tooltip: 'Masuk Akun',
+            icon: const Icon(Icons.login_rounded),
+            onPressed: () => Get.toNamed(Routes.LOGIN),
+          ),
+          IconButton(
             tooltip: 'Belanja Lagi',
             icon: const Icon(Icons.storefront_outlined),
             onPressed: () => Get.offAllNamed(Routes.HOME),
