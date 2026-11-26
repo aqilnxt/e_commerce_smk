@@ -1,18 +1,31 @@
+import 'package:hive_ce/hive.dart';
 import 'package:intl/intl.dart';
+
+part 'product_model.g.dart';
 
 final _rupiah = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
 String formatRupiah(int amount) => _rupiah.format(amount);
 
+@HiveType(typeId: 0)
 class ProductModel {
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   final String name;
+  @HiveField(2)
   final String category;
+  @HiveField(3)
   final int price;
+  @HiveField(4)
   final double rating;
+  @HiveField(5)
   final int reviewCount;
+  @HiveField(6)
   final String imageUrl;
+  @HiveField(7)
   final String description;
+  @HiveField(8)
   final bool isFavorite;
 
   const ProductModel({
@@ -28,6 +41,18 @@ class ProductModel {
   });
 
   String get formattedPrice => formatRupiah(price);
+
+  ProductModel copyWith({bool? isFavorite}) => ProductModel(
+    id: id,
+    name: name,
+    category: category,
+    price: price,
+    rating: rating,
+    reviewCount: reviewCount,
+    imageUrl: imageUrl,
+    description: description,
+    isFavorite: isFavorite ?? this.isFavorite,
+  );
 
   // Deserialisasi defensif dari JSON DummyJSON: field kosong, null, atau tipe berbeda tetap aman.
   factory ProductModel.fromJson(Map<String, dynamic> json) {

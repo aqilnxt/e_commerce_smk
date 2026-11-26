@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:e_commerce/app/data/local/product_local_datasource.dart';
+import 'package:e_commerce/app/data/models/product_model.dart';
+
 /// Service penyimpanan lokal yang hidup selama aplikasi berjalan.
 class StorageService extends GetxService {
   static const _themeKey = 'is_dark_mode';
@@ -19,9 +22,16 @@ class StorageService extends GetxService {
     _prefs = await SharedPreferences.getInstance();
     _isDarkMode.value = _prefs.getBool(_themeKey) ?? false;
 
-    // 2. Siapkan Hive CE, box-nya baru dipakai di Sesi 07
+    // 2. Siapkan Hive CE: adapter wajib didaftarkan sebelum box dibuka
     if (initHive) {
       await Hive.initFlutter();
+
+      if (!Hive.isAdapterRegistered(0)) {
+        Hive.registerAdapter(ProductModelAdapter());
+      }
+
+      await Hive.openBox<ProductModel>(ProductLocalDataSourceImpl.productsBoxName);
+      await Hive.openBox<ProductModel>(ProductLocalDataSourceImpl.wishlistBoxName);
     }
 
     return this;

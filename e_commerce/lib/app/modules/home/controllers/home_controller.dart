@@ -90,6 +90,11 @@ class HomeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Sesi 07: Sinkronisasi data favorit dari database offline Hive CE
+    favoriteIds.assignAll(_productRepository.getWishlist().map((e) => e.id));
+    // Isi awal dengan data lokal agar UI langsung tampil cepat
+    products.assignAll(_initialFallbackProducts);
+    // Sesi 05 & 07: Fetch katalog terbaru (dengan fallback offline caching)
     fetchProducts();
   }
 
@@ -159,8 +164,28 @@ class HomeController extends GetxController {
 
   bool isFavorite(String id) => favoriteIds.contains(id);
 
-  void toggleFavorite(String id) {
-    if (!favoriteIds.remove(id)) favoriteIds.add(id);
+  // Sesi 07: Toggle status favorit dan simpan secara persisten ke database Hive CE
+  Future<void> toggleFavorite(String productId) async {
+    final product = products.firstWhereOrNull((p) => p.id == productId);
+    if (product == null) return;
+
+    final isNowFav = await _productRepository.toggleWishlist(product);
+    if (isNowFav) {
+      favoriteIds.add(productId);
+      Get.snackbar(
+        'Disimpan ke Wishlist',
+        'Sepatu berhasil ditambahkan ke daftar favorit!',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF4F46E5).withValues(alpha: 0.9),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        duration: const Duration(seconds: 2),
+        icon: const Icon(Icons.favorite, color: Colors.white),
+      );
+    } else {
+      favoriteIds.remove(productId);
+    }
   }
 
   void addToCart(ProductModel product) {

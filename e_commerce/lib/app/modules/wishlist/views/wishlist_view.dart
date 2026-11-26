@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:e_commerce/app/core/theme/app_colors.dart';
 import 'package:e_commerce/app/modules/cart/views/components/cart_badge_button.dart';
+import 'package:e_commerce/app/routes/app_pages.dart';
 import '../controllers/wishlist_controller.dart';
 
 class WishlistView extends GetView<WishlistController> {
@@ -17,7 +18,7 @@ class WishlistView extends GetView<WishlistController> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => Get.back(),
         ),
-        title: const Text('Wishlist Favorit'),
+        title: Obx(() => Text('Wishlist Favorit (${controller.totalCount})')),
         actions: [
           // Indikator Fitur Offline Hive CE
           Container(
@@ -43,6 +44,15 @@ class WishlistView extends GetView<WishlistController> {
               ],
             ),
           ),
+          Obx(
+            () => controller.wishlistItems.isEmpty
+                ? const SizedBox.shrink()
+                : IconButton(
+                    tooltip: 'Kosongkan Wishlist',
+                    icon: const Icon(Icons.delete_sweep_outlined, color: AppColors.error),
+                    onPressed: controller.clearWishlist,
+                  ),
+          ),
           const CartBadgeButton(),
           const SizedBox(width: 8),
         ],
@@ -51,12 +61,37 @@ class WishlistView extends GetView<WishlistController> {
         final items = controller.wishlistItems;
         if (items.isEmpty) {
           return Center(
-            child: Text(
-              'Belum ada produk favorit',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.favorite_rounded, size: 72, color: AppColors.error.withAlpha(90)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Belum Ada Sepatu Favorit',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Tekan ikon hati di katalog untuk menyimpan sepatu incaranmu.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => Get.until((route) => route.settings.name == Routes.HOME),
+                    icon: const Icon(Icons.storefront_outlined, size: 18),
+                    label: const Text('Jelajahi Sepatu'),
+                  ),
+                ],
               ),
             ),
           );
@@ -133,7 +168,7 @@ class WishlistView extends GetView<WishlistController> {
                       IconButton(
                         icon: const Icon(Icons.favorite_rounded, color: AppColors.error),
                         tooltip: 'Hapus dari Wishlist',
-                        onPressed: () => controller.removeFromWishlist(item),
+                        onPressed: () => controller.removeFromWishlist(item.id),
                       ),
                       InkWell(
                         onTap: () => controller.moveToCart(item),

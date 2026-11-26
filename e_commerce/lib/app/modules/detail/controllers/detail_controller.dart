@@ -28,8 +28,7 @@ class DetailController extends GetxController {
     product.value = Get.arguments as ProductModel? ?? homeController.products.first;
   }
 
-  bool get isFavorite =>
-      product.value != null && homeController.isFavorite(product.value!.id);
+  bool get isFavorite => product.value != null && homeController.isFavorite(product.value!.id);
 
   void incrementQuantity() => quantity.value++;
 
@@ -37,30 +36,16 @@ class DetailController extends GetxController {
     if (quantity.value > 1) quantity.value--;
   }
 
-  void toggleFavorite() {
+  Future<void> toggleFavorite() async {
     final product = this.product.value;
     if (product == null) return;
-    homeController.toggleFavorite(product.id);
-    Get.snackbar(
-      isFavorite ? 'Wishlist Ditambahkan' : 'Wishlist Dihapus',
-      isFavorite ? '${product.name} disimpan ke favorit!' : '${product.name} dihapus dari favorit.',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isFavorite ? AppColors.accent : AppColors.darkSurfaceCard,
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 2),
-    );
+    await homeController.toggleFavorite(product.id);
   }
 
   void addToCart() {
     final product = this.product.value;
     if (product == null) return;
-    cartController.addItem(
-      product,
-      quantity: quantity.value,
-      size: selectedSize.value,
-    );
+    cartController.addItem(product, quantity: quantity.value, size: selectedSize.value);
     Get.snackbar(
       'Berhasil Ditambahkan',
       '${quantity.value} item ${product.name} (Size ${selectedSize.value}) masuk ke keranjang!',

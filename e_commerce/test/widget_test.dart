@@ -13,8 +13,23 @@ class FakeProductRepository implements ProductRepository {
 
   final Result<List<ProductModel>, String> result;
 
+  final _wishlist = <String, ProductModel>{};
+
   @override
   Future<Result<List<ProductModel>, String>> fetchProducts() async => result;
+
+  @override
+  List<ProductModel> getWishlist() => _wishlist.values.toList();
+
+  @override
+  bool isFavorite(String productId) => _wishlist.containsKey(productId);
+
+  @override
+  Future<bool> toggleWishlist(ProductModel product) async {
+    if (_wishlist.remove(product.id) != null) return false;
+    _wishlist[product.id] = product;
+    return true;
+  }
 }
 
 void useRepository(Result<List<ProductModel>, String> result) {
@@ -97,10 +112,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.favorite_border_rounded).last);
     await tester.pumpAndSettle();
-    expect(find.text('Wishlist Favorit'), findsOneWidget);
+    expect(find.text('Wishlist Favorit (1)'), findsOneWidget);
     await tester.tap(find.text('Ke Keranjang'));
     await settle(tester);
-    expect(find.text('Belum ada produk favorit'), findsOneWidget);
+    expect(find.text('Belum Ada Sepatu Favorit'), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
 
     FlutterError.onError = reportError;

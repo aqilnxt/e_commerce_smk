@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import 'package:e_commerce/app/core/network/dio_client.dart';
+import 'package:e_commerce/app/data/local/product_local_datasource.dart';
 import 'package:e_commerce/app/data/remote/product_remote_datasource.dart';
 import 'package:e_commerce/app/data/repository/product_repository.dart';
 import '../../cart/controllers/cart_controller.dart';
@@ -12,14 +13,20 @@ class HomeBinding extends Bindings {
     // 1. Core Network: DioClient terpusat
     Get.lazyPut<DioClient>(() => DioClient());
 
-    // 2. Data Source: menerima DioClient
+    // 2. Data Sources: Remote (REST API DummyJSON) & Local (Hive CE Box)
     Get.lazyPut<ProductRemoteDataSource>(
       () => ProductRemoteDataSourceImpl(Get.find<DioClient>()),
     );
+    Get.lazyPut<ProductLocalDataSource>(
+      () => ProductLocalDataSourceImpl(),
+    );
 
-    // 3. Repository: menerima ProductRemoteDataSource
+    // 3. Repository: menerima Remote & Local DataSource
     Get.lazyPut<ProductRepository>(
-      () => ProductRepositoryImpl(Get.find<ProductRemoteDataSource>()),
+      () => ProductRepositoryImpl(
+        Get.find<ProductRemoteDataSource>(),
+        Get.find<ProductLocalDataSource>(),
+      ),
     );
 
     // 4. Controller Keranjang Global
