@@ -37,7 +37,7 @@ class CartView extends GetView<CartController> {
                 confirmTextColor: Colors.white,
                 buttonColor: AppColors.error,
                 onConfirm: () {
-                  controller.clearCart();
+                  controller.clearCartAsync();
                   Get.back();
                 },
               );

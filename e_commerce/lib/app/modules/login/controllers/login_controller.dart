@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:e_commerce/app/core/services/auth_service.dart';
 import 'package:e_commerce/app/core/theme/app_colors.dart';
 import 'package:e_commerce/app/routes/app_pages.dart';
 
@@ -33,9 +34,7 @@ class LoginController extends GetxController {
     if (value == null || value.trim().isEmpty) {
       return 'Alamat email wajib diisi';
     }
-    final emailRegex = RegExp(
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-    );
+    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
     if (!emailRegex.hasMatch(value.trim())) {
       return 'Format email tidak valid (contoh: nama@sekolah.sch.id)';
     }
@@ -63,6 +62,10 @@ class LoginController extends GetxController {
     await Future.delayed(const Duration(milliseconds: 1500));
     isLoading.value = false;
 
+    if (Get.isRegistered<AuthService>()) {
+      await AuthService.to.login(emailController.text);
+    }
+
     Get.snackbar(
       'Berhasil Masuk',
       'Selamat datang kembali di KicksStore!',
@@ -72,6 +75,18 @@ class LoginController extends GetxController {
       margin: const EdgeInsets.all(16),
       borderRadius: 12,
     );
-    Get.offAllNamed(Routes.HOME);
+
+    // Sesi 08: Periksa apakah ada return route (misal dari pencegatan /checkout oleh AuthMiddleware)
+    String? returnRoute;
+    if (Get.isRegistered<AuthService>()) {
+      returnRoute = AuthService.to.redirectRoute;
+      AuthService.to.redirectRoute = null; // Reset setelah dibaca
+    }
+
+    if (returnRoute != null && returnRoute.isNotEmpty) {
+      Get.offNamed(returnRoute); // Kembali langsung ke rute asal (/checkout)
+    } else {
+      Get.offAllNamed(Routes.HOME); // Navigasi normal ke Beranda
+    }
   }
 }

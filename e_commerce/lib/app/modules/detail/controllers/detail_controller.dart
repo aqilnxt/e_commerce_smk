@@ -45,7 +45,7 @@ class DetailController extends GetxController {
   void addToCart() {
     final product = this.product.value;
     if (product == null) return;
-    cartController.addItem(product, quantity: quantity.value, size: selectedSize.value);
+    cartController.addItemAsync(product, quantity: quantity.value, size: selectedSize.value);
     Get.snackbar(
       'Berhasil Ditambahkan',
       '${quantity.value} item ${product.name} (Size ${selectedSize.value}) masuk ke keranjang!',

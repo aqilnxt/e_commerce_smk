@@ -189,7 +189,7 @@ class HomeController extends GetxController {
   }
 
   void addToCart(ProductModel product) {
-    cartController.addItem(product);
+    cartController.addItemAsync(product);
     Get.snackbar(
       'Ditambahkan',
       '${product.name} ditambahkan ke keranjang!',

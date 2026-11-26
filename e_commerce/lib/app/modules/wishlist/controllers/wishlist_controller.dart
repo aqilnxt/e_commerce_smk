@@ -48,7 +48,7 @@ class WishlistController extends GetxController {
   }
 
   Future<void> moveToCart(ProductModel product) async {
-    cartController.addItem(product);
+    await cartController.addItemAsync(product);
     await _productRepository.toggleWishlist(product);
     loadWishlist();
     if (Get.isRegistered<HomeController>()) {

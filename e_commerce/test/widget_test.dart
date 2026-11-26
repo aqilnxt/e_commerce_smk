@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:e_commerce/app/core/network/result.dart';
+import 'package:e_commerce/app/core/services/auth_service.dart';
+import 'package:e_commerce/app/data/local/cart_local_datasource.dart';
 import 'package:e_commerce/app/data/models/product_model.dart';
 import 'package:e_commerce/app/data/repository/product_repository.dart';
 import 'package:e_commerce/app/routes/app_pages.dart';
+
+import 'cart_controller_test.dart' show MemoryCartDataSource;
 
 /// Repository palsu supaya test tidak bergantung pada internet
 class FakeProductRepository implements ProductRepository {
@@ -34,6 +40,7 @@ class FakeProductRepository implements ProductRepository {
 
 void useRepository(Result<List<ProductModel>, String> result) {
   Get.put<ProductRepository>(FakeProductRepository(result), permanent: true);
+  Get.put<CartLocalDataSource>(MemoryCartDataSource(), permanent: true);
 }
 
 Future<void> settle(WidgetTester tester) async {
@@ -192,5 +199,55 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
     FlutterError.onError = reportError;
+  });
+
+  testWidgets('tamu dicegat ke login lalu dikembalikan ke checkout', (tester) async {
+    tester.view.physicalSize = const Size(2700, 6000);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    useRepository(const Failure('offline'));
+    SharedPreferences.setMockInitialValues({});
+    final auth = await AuthService().init();
+    Get.put<AuthService>(auth, permanent: true);
+
+    await tester.pumpWidget(
+      GetMaterialApp(initialRoute: AppPages.INITIAL, getPages: AppPages.routes),
+    );
+    await tester.pumpAndSettle();
+
+    Get.toNamed(Routes.CHECKOUT);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('Akses Dibatasi'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    expect(find.text('Masuk ke Akun'), findsOneWidget);
+    expect(auth.redirectRoute, Routes.CHECKOUT);
+
+    await tester.enterText(find.byType(TextFormField).first, 'siswa@sekolah.sch.id');
+    await tester.enterText(find.byType(TextFormField).last, 'sepatubaru1');
+    await tester.tap(find.text('Masuk ke Akun'));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pengiriman & Checkout'), findsOneWidget);
+    expect(auth.isLoggedIn.value, isTrue);
+    expect(auth.redirectRoute, isNull);
+
+    await tester.tap(find.text('GoSend Instant • Rp 35.000'));
+    await tester.pump();
+    expect(find.text('Ongkos Kirim (GoSend Instant)'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).last, 'smkbisa');
+    await tester.tap(find.text('Gunakan Kupon'));
+    await tester.pump();
+    expect(find.text('Potongan Promo Kupon (SMKBISA)'), findsOneWidget);
+
+    // Snackbar GetX antre satu per satu, tunggu sampai semuanya tertutup
+    for (var i = 0; i < 15; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    await tester.pumpAndSettle();
   });
 }

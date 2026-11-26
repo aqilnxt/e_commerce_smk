@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:e_commerce/app/data/local/cart_local_datasource.dart';
 import 'package:e_commerce/app/data/local/product_local_datasource.dart';
+import 'package:e_commerce/app/data/models/cart_item_model.dart';
 import 'package:e_commerce/app/data/models/product_model.dart';
 
 /// Service penyimpanan lokal yang hidup selama aplikasi berjalan.
@@ -29,9 +31,13 @@ class StorageService extends GetxService {
       if (!Hive.isAdapterRegistered(0)) {
         Hive.registerAdapter(ProductModelAdapter());
       }
+      if (!Hive.isAdapterRegistered(1)) {
+        Hive.registerAdapter(CartItemModelAdapter());
+      }
 
       await Hive.openBox<ProductModel>(ProductLocalDataSourceImpl.productsBoxName);
       await Hive.openBox<ProductModel>(ProductLocalDataSourceImpl.wishlistBoxName);
+      await Hive.openBox<CartItemModel>(CartLocalDataSourceImpl.cartBoxName);
     }
 
     return this;

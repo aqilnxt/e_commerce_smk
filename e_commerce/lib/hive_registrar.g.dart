@@ -3,16 +3,19 @@
 // Check in to version control
 
 import 'package:hive_ce/hive_ce.dart';
+import 'package:e_commerce/app/data/models/cart_item_model.dart';
 import 'package:e_commerce/app/data/models/product_model.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
+    registerAdapter(CartItemModelAdapter());
     registerAdapter(ProductModelAdapter());
   }
 }
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
+    registerAdapter(CartItemModelAdapter());
     registerAdapter(ProductModelAdapter());
   }
 }
