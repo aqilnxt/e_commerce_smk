@@ -38,9 +38,12 @@ class FakeProductRepository implements ProductRepository {
   }
 }
 
-void useRepository(Result<List<ProductModel>, String> result) {
+/// Tanpa Firebase.initializeApp, AuthService berjalan dalam mode lokal
+Future<AuthService> useRepository(Result<List<ProductModel>, String> result) async {
   Get.put<ProductRepository>(FakeProductRepository(result), permanent: true);
   Get.put<CartLocalDataSource>(MemoryCartDataSource(), permanent: true);
+  SharedPreferences.setMockInitialValues({});
+  return Get.put<AuthService>(await AuthService().init(), permanent: true);
 }
 
 Future<void> settle(WidgetTester tester) async {
@@ -53,7 +56,7 @@ void main() {
 
   testWidgets('filter, favorit, badge, dan stepper reaktif', (tester) async {
     // Server gagal -> katalog lokal cadangan (6 produk) yang tampil
-    useRepository(const Failure('offline'));
+    await useRepository(const Failure('offline'));
     tester.view.physicalSize = const Size(2700, 6000); // font tes (Ahem) jauh lebih lebar dari font asli
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -129,7 +132,7 @@ void main() {
   });
 
   testWidgets('form login menampilkan error validasi secara realtime', (tester) async {
-    useRepository(const Failure('offline'));
+    await useRepository(const Failure('offline'));
     tester.view.physicalSize = const Size(2700, 6000);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -161,8 +164,6 @@ void main() {
     expect(field().obscureText, isFalse);
 
     await tester.tap(find.text('Masuk ke Akun'));
-    await tester.pump();
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle(const Duration(seconds: 1));
     await tester.pump(const Duration(seconds: 5));
@@ -175,7 +176,7 @@ void main() {
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
 
-    useRepository(Success([
+    await useRepository(Success([
       ProductModel.fromJson({'id': 1, 'title': 'Sepatu A', 'category': 'mens-shoes', 'price': 100}),
       ProductModel.fromJson({'id': 2, 'title': 'Sepatu B', 'category': 'mens-shoes', 'price': 50}),
     ]));
@@ -206,10 +207,7 @@ void main() {
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
 
-    useRepository(const Failure('offline'));
-    SharedPreferences.setMockInitialValues({});
-    final auth = await AuthService().init();
-    Get.put<AuthService>(auth, permanent: true);
+    final auth = await useRepository(const Failure('offline'));
 
     await tester.pumpWidget(
       GetMaterialApp(initialRoute: AppPages.INITIAL, getPages: AppPages.routes),

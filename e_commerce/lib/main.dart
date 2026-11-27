@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -5,10 +6,14 @@ import 'app/core/services/auth_service.dart';
 import 'app/core/theme/app_theme.dart';
 import 'app/data/local/storage_service.dart';
 import 'app/routes/app_pages.dart';
+import 'firebase_options.dart';
 
 void main() async {
   // Engine Flutter harus siap sebelum SharedPreferences dan Hive diakses
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Harus selesai sebelum AuthService memanggil FirebaseAuth.instance
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   final storageService = await Get.putAsync(() => StorageService().init());
   await Get.putAsync(() => AuthService().init());

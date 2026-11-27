@@ -19,6 +19,13 @@ class LoginController extends GetxController {
     super.onInit();
     emailController = TextEditingController();
     passwordController = TextEditingController();
+
+    // Pengguna yang sudah login tidak perlu melihat formulir login lagi
+    if (Get.isRegistered<AuthService>() && AuthService.to.isLoggedIn.value) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.offAllNamed(Routes.HOME);
+      });
+    }
   }
 
   @override
@@ -55,38 +62,48 @@ class LoginController extends GetxController {
   }
 
   Future<void> login() async {
-    if (!formKey.currentState!.validate()) return;
+    if (formKey.currentState != null && !formKey.currentState!.validate()) return;
 
     isLoading.value = true;
-    // Simulasi request ke server sebelum backend Firebase dipasang di Sesi 09
-    await Future.delayed(const Duration(milliseconds: 1500));
-    isLoading.value = false;
+    try {
+      if (Get.isRegistered<AuthService>()) {
+        await AuthService.to.login(emailController.text.trim(), passwordController.text);
+      }
 
-    if (Get.isRegistered<AuthService>()) {
-      await AuthService.to.login(emailController.text);
-    }
+      Get.snackbar(
+        'Berhasil Masuk 🎉',
+        'Selamat datang kembali di KicksStore!',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.success,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
 
-    Get.snackbar(
-      'Berhasil Masuk',
-      'Selamat datang kembali di KicksStore!',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppColors.success,
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-    );
+      // Kembali ke rute yang dicegat AuthMiddleware (misal /checkout) jika ada
+      String? returnRoute;
+      if (Get.isRegistered<AuthService>()) {
+        returnRoute = AuthService.to.redirectRoute;
+        AuthService.to.redirectRoute = null;
+      }
 
-    // Sesi 08: Periksa apakah ada return route (misal dari pencegatan /checkout oleh AuthMiddleware)
-    String? returnRoute;
-    if (Get.isRegistered<AuthService>()) {
-      returnRoute = AuthService.to.redirectRoute;
-      AuthService.to.redirectRoute = null; // Reset setelah dibaca
-    }
-
-    if (returnRoute != null && returnRoute.isNotEmpty) {
-      Get.offNamed(returnRoute); // Kembali langsung ke rute asal (/checkout)
-    } else {
-      Get.offAllNamed(Routes.HOME); // Navigasi normal ke Beranda
+      if (returnRoute != null && returnRoute.isNotEmpty) {
+        Get.offNamed(returnRoute);
+      } else {
+        Get.offAllNamed(Routes.HOME);
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Gagal Masuk',
+        AuthService.mapFirebaseAuthError(e),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+    } finally {
+      isLoading.value = false;
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:e_commerce/app/core/services/auth_service.dart';
 import 'package:e_commerce/app/core/theme/app_colors.dart';
 import 'package:e_commerce/app/data/local/storage_service.dart';
 import 'package:e_commerce/app/modules/cart/views/components/cart_badge_button.dart';
@@ -49,20 +50,6 @@ class HomeView extends GetView<HomeController> {
           ],
         ),
         actions: [
-          // Navigasi ke Wishlist
-          IconButton(
-            tooltip: 'Wishlist Favorit',
-            icon: const Icon(Icons.favorite_border_rounded),
-            onPressed: () => Get.toNamed(Routes.WISHLIST),
-          ),
-
-          // Navigasi ke Riwayat Pesanan
-          IconButton(
-            tooltip: 'Riwayat Pesanan',
-            icon: const Icon(Icons.receipt_long_outlined),
-            onPressed: () => Get.toNamed(Routes.ORDERS),
-          ),
-
           // Tombol Saklar Dark / Light Mode
           IconButton(
             tooltip: 'Ganti Tema',
@@ -81,7 +68,46 @@ class HomeView extends GetView<HomeController> {
 
           // Navigasi ke Keranjang Belanja dengan Badge
           const CartBadgeButton(),
+
+          // Avatar akun: lembar profil jika sudah login, halaman login jika belum
+          Obx(() {
+            final loggedIn = _isLoggedIn;
+            return IconButton(
+              tooltip: loggedIn ? 'Akun Saya' : 'Masuk Akun',
+              onPressed: () => _openAccount(context),
+              icon: loggedIn
+                  ? CircleAvatar(
+                      radius: 14,
+                      backgroundColor: AppColors.primary,
+                      child: Text(
+                        AuthService.to.displayName.characters.first.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    )
+                  : const Icon(Icons.account_circle_outlined),
+            );
+          }),
           const SizedBox(width: 8),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: AppColors.primary,
+        onTap: (index) {
+          if (index == 1) Get.toNamed(Routes.WISHLIST);
+          if (index == 2) Get.toNamed(Routes.ORDERS);
+          if (index == 3) _openAccount(context);
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Beranda'),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite_border_rounded), label: 'Wishlist'),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt_long_outlined), label: 'Pesanan'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Akun'),
         ],
       ),
       body: RefreshIndicator(
@@ -92,6 +118,29 @@ class HomeView extends GetView<HomeController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Sapaan pengguna, reaktif terhadap authStateChanges()
+              Obx(
+                () => Text(
+                  _isLoggedIn ? 'Halo, ${AuthService.to.displayName}! 👋' : 'Halo, Tamu! 👋',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Temukan sneakers terbaik untuk langkahmu hari ini.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Search Bar Input
               TextField(
                 decoration: InputDecoration(
@@ -248,6 +297,172 @@ class HomeView extends GetView<HomeController> {
           ),
         ),
       ),
+    );
+  }
+
+  bool get _isLoggedIn => Get.isRegistered<AuthService>() && AuthService.to.isLoggedIn.value;
+
+  void _openAccount(BuildContext context) {
+    if (_isLoggedIn) {
+      _showAccountBottomSheet(context);
+    } else {
+      Get.toNamed(Routes.LOGIN);
+    }
+  }
+
+  void _showAccountBottomSheet(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final auth = AuthService.to;
+    final secondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
+    Get.bottomSheet(
+      SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: AppColors.primary,
+                    child: Text(
+                      auth.displayName.characters.first.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          auth.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          auth.currentUserEmail.value,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 13, color: secondary),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.verified_user_rounded, size: 14, color: AppColors.success),
+                              SizedBox(width: 4),
+                              Text(
+                                'Terautentikasi Firebase',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.success,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Divider(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.receipt_long_outlined),
+                title: const Text('Riwayat Pesanan'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Get.back();
+                  Get.toNamed(Routes.ORDERS);
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.favorite_border_rounded),
+                title: const Text('Wishlist Favorit'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Get.back();
+                  Get.toNamed(Routes.WISHLIST);
+                },
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.error),
+                  minimumSize: const Size(0, 48),
+                ),
+                onPressed: _confirmLogout,
+                icon: const Icon(Icons.logout_rounded),
+                label: const Text('Keluar dari Akun'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+    );
+  }
+
+  void _confirmLogout() {
+    Get.defaultDialog(
+      title: 'Keluar dari Akun?',
+      middleText: 'Kamu perlu login lagi untuk checkout dan melihat pesanan.',
+      textCancel: 'Batal',
+      textConfirm: 'Ya, Keluar',
+      confirmTextColor: Colors.white,
+      buttonColor: AppColors.error,
+      cancelTextColor: AppColors.error,
+      onConfirm: () async {
+        Get.back(); // tutup dialog
+        Get.back(); // tutup bottom sheet
+        await AuthService.to.logout();
+        Get.snackbar(
+          'Berhasil Keluar',
+          'Sampai jumpa lagi di KicksStore!',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+        );
+      },
     );
   }
 }

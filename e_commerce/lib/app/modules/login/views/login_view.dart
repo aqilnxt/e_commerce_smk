@@ -24,7 +24,6 @@ class LoginView extends GetView<LoginController> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Form(
             key: controller.formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -73,6 +72,8 @@ class LoginView extends GetView<LoginController> {
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
+                  // Per field: email yang diisi otomatis dari Register tidak ikut memvalidasi sandi
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: controller.emailController,
                   validator: controller.validateEmail,
                   keyboardType: TextInputType.emailAddress,
@@ -95,6 +96,7 @@ class LoginView extends GetView<LoginController> {
                 const SizedBox(height: 8),
                 Obx(
                   () => TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     controller: controller.passwordController,
                     validator: controller.validatePassword,
                     obscureText: controller.isPasswordHidden.value,

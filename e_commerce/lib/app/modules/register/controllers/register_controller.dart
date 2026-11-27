@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:e_commerce/app/core/services/auth_service.dart';
 import 'package:e_commerce/app/core/theme/app_colors.dart';
+import 'package:e_commerce/app/modules/login/controllers/login_controller.dart';
+import 'package:e_commerce/app/routes/app_pages.dart';
 
 class RegisterController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -51,9 +54,7 @@ class RegisterController extends GetxController {
     if (value == null || value.trim().isEmpty) {
       return 'Alamat email wajib diisi';
     }
-    final emailRegex = RegExp(
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-    );
+    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
     if (!emailRegex.hasMatch(value.trim())) {
       return 'Format email tidak valid (contoh: nama@sekolah.sch.id)';
     }
@@ -84,23 +85,67 @@ class RegisterController extends GetxController {
   }
 
   Future<void> register() async {
-    if (!formKey.currentState!.validate()) return;
+    if (formKey.currentState != null && !formKey.currentState!.validate()) return;
 
     isLoading.value = true;
-    // Simulasi request pendaftaran sebelum backend Firebase dipasang di Sesi 09
-    await Future.delayed(const Duration(milliseconds: 1500));
-    isLoading.value = false;
+    try {
+      final registeredEmail = emailController.text.trim();
 
-    Get.back();
-    Get.snackbar(
-      'Pendaftaran Berhasil 🎉',
-      'Akunmu berhasil didaftarkan. Silakan masuk menggunakan email dan password baru.',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppColors.success,
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 3),
-    );
+      // 1. Daftarkan akun baru ke server Firebase Auth
+      if (Get.isRegistered<AuthService>()) {
+        await AuthService.to.register(registeredEmail, passwordController.text);
+      }
+
+      // 2. Periksa apakah pendaftaran dipicu dari rute yang dicegat (misal: /checkout)
+      String? returnRoute;
+      if (Get.isRegistered<AuthService>()) {
+        returnRoute = AuthService.to.redirectRoute;
+        AuthService.to.redirectRoute = null;
+      }
+
+      if (returnRoute != null && returnRoute.isNotEmpty) {
+        // KASUS 1: Datang dari Checkout → tetap login & langsung buka /checkout
+        Get.until(
+          (route) =>
+              route.isFirst ||
+              (route.settings.name != Routes.LOGIN && route.settings.name != Routes.REGISTER),
+        );
+        Get.toNamed(returnRoute);
+      } else {
+        // KASUS 2: Pendaftaran biasa → logout sementara & kembali ke Login dengan email terisi
+        if (Get.isRegistered<AuthService>()) {
+          await AuthService.to.logout();
+        }
+        if (Get.isRegistered<LoginController>()) {
+          Get.find<LoginController>().emailController.text = registeredEmail;
+        }
+        Get.back();
+      }
+
+      Get.snackbar(
+        'Pendaftaran Berhasil 🎉',
+        returnRoute != null
+            ? 'Akunmu berhasil dibuat. Silakan lanjutkan pembayaran.'
+            : 'Akunmu berhasil didaftarkan. Silakan masuk menggunakan email dan password baru.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.success,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        duration: const Duration(seconds: 3),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Gagal Mendaftar',
+        AuthService.mapFirebaseAuthError(e),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+    } finally {
+      isLoading.value = false;
+    }
   }
 }
